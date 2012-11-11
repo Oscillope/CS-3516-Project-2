@@ -5,8 +5,8 @@ all: wireview
 debug: CFLAGS = -Wall -DDEBUG
 debug: wireview
 wireview: wireview.o
-	$(CC) $(CFLAGS) -lpcap wireview.o -o wireview
+	$(CC) $(CFLAGS) wireview.o -o wireview -lpcap 
 wireview.o:
-	$(CC) $(CFLAGS) -lpcap -c wireview.c
+	$(CC) $(CFLAGS) -c wireview.c -lpcap 
 clean:
 	rm -f *~ *.o
