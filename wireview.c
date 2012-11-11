@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <pcap/pcap.h>
+#include <pcap.h>
 #define MAX_SIZE 102400 //100KB should be enough.
 
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap();
 
 int main(int argc, char** argv) {
-	char data[MAX_SIZE];
 	char* path = argv[1];
 	pcap_t *cap;
 	cap = pcap_open_offline(path, NULL);
