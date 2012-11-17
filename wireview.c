@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pcap/pcap.h>
+#include <pcap/bpf.h>
 #define MAX_SIZE 102400 //100KB should be enough.
 
 char* openFile(char* path, char data[MAX_SIZE]);
@@ -12,7 +13,14 @@ int main(int argc, char** argv) {
 	char* path = argv[1];
 	pcap_t *cap;
 	cap = pcap_open_offline(path, NULL);
-	pcap_loop(cap, -1, printCap, NULL);
+	int datalink = pcap_datalink(cap);
+	if(datalink==DLT_EN10MB){
+	    printf("This is an ethernet capture! Yay!\n");
+	    pcap_loop(cap, -1, printCap, NULL);
+	} else {
+	    printf("This isn't ethernet... Why are you giving me this bullshit?\n");
+	}
+    pcap_close(cap);
 	return 0;
 }
 
