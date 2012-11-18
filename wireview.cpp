@@ -18,6 +18,10 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 int numpackets = 0; 
 
 int main(int argc, char** argv) {
+	if(argc < 2) {
+		fprintf(stderr, "You must provide a packet capture file, you fucking idiot.\n");
+		exit(1);
+	}
 	char* path = argv[1];
 	pcap_t *cap;
 	cap = pcap_open_offline(path, NULL);
