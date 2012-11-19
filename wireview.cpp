@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include <pcap.h>
 //internet packet utilities
 #include <netinet/ether.h>
@@ -15,11 +16,14 @@
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
 
-int numpackets = 0; 
+int numpackets = 0;
 
 int main(int argc, char** argv) {
 	if(argc < 2) {
-		fprintf(stderr, "You must provide a packet capture file, you fucking idiot.\n");
+		fprintf(stderr, "You must provide a packet capture file.\n");
+		#ifdef VULGAR
+			printf("Fucking idiot.\n");
+		#endif
 		exit(1);
 	}
 	char* path = argv[1];
@@ -30,15 +34,31 @@ int main(int argc, char** argv) {
 	    printf("This is an ethernet capture! Yay!\n");
 	    pcap_loop(cap, -1, printCap, NULL);
 	} else {
-	    printf("This isn't ethernet... Why are you giving me this bullshit?\n");
+		#ifndef VULGAR
+			printf("This isn't ethernet!");
+		#else
+			printf("This isn't ethernet! Why are you giving me this bullshit?\n");
+		#endif
 	}
     pcap_close(cap);
-    printf("You captured %d shitty-ass packets.\n", numpackets);
+	#ifdef VULGAR
+		printf("You captured %d shitty-ass packets.\n", numpackets);
+	#else
+		printf("You captured %d packets.\n", numpackets);
+	#endif
 	return 0;
 }
 
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt) {
-    numpackets++;
 	struct timeval pkt_time = header->ts;
+	if(numpackets < 1) {
+		time_t timesec = pkt_time.tv_sec;
+		struct tm* secinfo = localtime(&timesec);
+		printf("Packet capture started at %s", asctime(secinfo));
+		#ifdef VULGAR
+			printf("You fucker.\n");
+		#endif
+	}
 	printf("Received packet at time %ld    %ld.\n", pkt_time.tv_sec, pkt_time.tv_usec);
+	numpackets++;
 }
