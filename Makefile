@@ -2,8 +2,10 @@ CC = g++
 CFLAGS = -Wall
 
 all: wireview
-debug: CFLAGS = -Wall -DDEBUG
+debug: CFLAGS += -DDEBUG
 debug: wireview
+vulgar: CFLAGS += -DVULGAR
+vulgar: wireview
 wireview: wireview.o
 	$(CC) $(CFLAGS) wireview.o -o wireview -lpcap 
 wireview.o:
