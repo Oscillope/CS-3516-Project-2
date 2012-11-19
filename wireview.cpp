@@ -11,12 +11,16 @@
 #include <net/if_arp.h>
 //constants
 #define MAX_SIZE 102400 //100KB should be enough.
-
+#define ADDR_LEN 128
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
 
 int numpackets = 0; 
-
+class node {
+    //TODO determine what size this buffer should actually be
+    char data[ADDR_LEN];
+    node *next, *last;
+}
 int main(int argc, char** argv) {
 	if(argc < 2) {
 		fprintf(stderr, "You must provide a packet capture file, you fucking idiot.\n");
