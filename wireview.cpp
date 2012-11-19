@@ -15,9 +15,11 @@
 #include <net/ethernet.h>
 //constants
 #define MAX_SIZE 102400 //100KB should be enough.
+//functions
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
-
+char* printMac(const u_char* data);
+//global variables
 int numpackets = 0;
 int lendnslist = 0;
 
@@ -51,7 +53,7 @@ int main(int argc, char** argv) {
 	    #endif
 	    pcap_loop(cap, -1, printCap, NULL);
 	} else {
-	    printf("This isn't ethernet!");
+			printf("This isn't ethernet!\n");
 		#ifdef VULGAR
 			printf("Why are you giving me this bullshit?\n");
 		#endif
@@ -93,7 +95,20 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	}
 	else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
 	    printf("This is a fucking ARP packet.\n");
+	    printf("Source MAC: %s\n",printMac(ethernet->ether_shost));
+	    printf("Destination MAC: %s\n",printMac(ethernet->ether_dhost));
 	}
 	printf("Received packet at time %ld    %ld.\n", pkt_time.tv_sec, pkt_time.tv_usec);
 	numpackets++;
 }
+
+char* printMac(const u_char* data) {
+	char string[20] = "";
+	for(int i = 0; i < 5; i++) {
+		sprintf(string, "%s%.2x", string, data[i]);
+		if(i < 4) sprintf(string, "%s:", string);
+	}
+	return string;
+}
+		
+		
