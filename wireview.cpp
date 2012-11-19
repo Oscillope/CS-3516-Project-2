@@ -21,7 +21,7 @@ class node {
     //TODO determine what size this buffer should actually be
     char data[ADDR_LEN];
     node *next, *last;
-}
+};
 
 int main(int argc, char** argv) {
 	if(argc < 2) {
@@ -36,13 +36,16 @@ int main(int argc, char** argv) {
 	cap = pcap_open_offline(path, NULL);
 	int datalink = pcap_datalink(cap);
 	if(datalink==DLT_EN10MB){
-	    printf("This is an ethernet capture! Yay!\n");
+	    #ifdef VULGAR
+			printf("This is an ethernet capture! Fuck yeah!\n");
+		#else
+	        printf("This is an ethernet capture! Yay!\n");
+	    #endif
 	    pcap_loop(cap, -1, printCap, NULL);
 	} else {
-		#ifndef VULGAR
-			printf("This isn't ethernet!");
-		#else
-			printf("This isn't ethernet! Why are you giving me this bullshit?\n");
+	    printf("This isn't ethernet!");
+		#ifdef VULGAR
+			printf("Why are you giving me this bullshit?\n");
 		#endif
 	}
     pcap_close(cap);
