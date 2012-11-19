@@ -4,9 +4,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <pcap.h>
+#include <arpa/inet.h>
 //internet packet utilities
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <netinet/in.h>
 #include <netinet/udp.h>
 //network packet utilities
 #include <net/if_arp.h>
@@ -72,6 +74,18 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	struct ether_header* ethernet = (struct ether_header *)pkt;
 	if(ntohs(ethernet->ether_type)==ETHERTYPE_IP){
 	    printf("This is a fucking IP packet.\n");
+	    struct iphdr* ip = (struct iphdr*)(pkt+sizeof(struct ether_header));
+	    char srcstr[INET_ADDRSTRLEN], dststr[INET_ADDRSTRLEN];
+	    inet_ntop(AF_INET, &(ip->saddr), srcstr, INET_ADDRSTRLEN);
+	    inet_ntop(AF_INET, &(ip->daddr), dststr, INET_ADDRSTRLEN);
+	    printf("src: %s dst: %s protocol: %d\n", srcstr, dststr, ip->protocol);
+	    if(ip->protocol==IPPROTO_UDP){
+	        printf("This fucker is a UDP packet.\n");
+	        struct udphdr* udp = (struct udphdr*)(pkt+sizeof(struct ether_header)+sizeof(iphdr));
+	        short sport = ntohs(udp->source);
+	        short dport = ntohs(udp->dest);
+            printf("src port: %d dst port: %d\n", sport, dport);
+	    }
 	}
 	else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
 	    printf("This is a fucking ARP packet.\n");
