@@ -15,18 +15,22 @@
 #include <net/ethernet.h>
 //constants
 #define MAX_SIZE 102400 //100KB should be enough.
-#define ADDR_LEN 128
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
 
 int numpackets = 0;
- 
-typedef struct mynode{
-    //TODO determine what size this buffer should actually be
-    char data[ADDR_LEN];
-    struct mynode *next, *last;
-} node;
+int lendnslist = 0;
 
+typedef struct myipnode{
+    //TODO determine what size this buffer should actually be
+    char data[INET_ADDRSTRLEN];
+    struct mynode *next, *last;
+} ipnode;
+typedef struct mydnsnode{
+    short port;
+    struct mynode *next;
+} node;
+node unique_ports_head;
 int main(int argc, char** argv) {
 	if(argc < 2) {
 		fprintf(stderr, "You must provide a packet capture file.\n");
