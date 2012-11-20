@@ -88,7 +88,7 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	    }
 	}
 	else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
-	    printf("This is a fucking ARP packet.\n");
+	    printf("This is an ARP packet.\n");
 	    printf("Source MAC: %s\n",printMac(ethernet->ether_shost));
 	    printf("Destination MAC: %s\n",printMac(ethernet->ether_dhost));
 	}
