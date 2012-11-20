@@ -5,9 +5,6 @@
 #include <time.h>
 #include <pcap.h>
 #include <arpa/inet.h>
-#include <list>
-#include <map>
-#include <iostream>
 //internet packet utilities
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
@@ -16,6 +13,11 @@
 //network packet utilities
 #include <net/if_arp.h>
 #include <net/ethernet.h>
+//C++ includes
+#include <list>
+#include <map>
+#include <iostream>
+#include <sstream>
 using namespace std;
 //constants
 #define MAX_SIZE 102400 //100KB should be enough.
@@ -27,6 +29,10 @@ bool findInList(list<short> checkList, short checkPort);
 bool findInMap(map<string, int> checkMap, string checkString);
 void printShortList(list<short> toPrint);
 void printMap(map<string, int> toPrint);
+void bold();
+void underline();
+void color(int col);
+void unattr();
 //global variables
 int numpackets = 0;
 map<string, int> srcMacs;
@@ -46,19 +52,48 @@ int main(int argc, char** argv) {
 	cap = pcap_open_offline(path, NULL);
 	int datalink = pcap_datalink(cap);
 	if(datalink==DLT_EN10MB){
-	    printf("This is an ethernet capture! Yay!\n");
+		#ifdef DEBUG
+			printf("This is an ethernet capture! Yay!\n");
+	    #endif
 	    pcap_loop(cap, -1, printCap, NULL);
-	} else {
+	}
+	else {
 			printf("This isn't ethernet!\n");
 	}
     pcap_close(cap);
-    printf("Unique Source Ports:\n");
+    underline();
+    color(31);
+    printf("Unique UDP Source Ports:\n");
+    unattr();
     printShortList(srcPorts);
-    printf("Unique Destination Ports:\n");
+    underline();
+    color(32);
+    printf("Unique UDP Destination Ports:\n");
+    unattr();
     printShortList(destPorts);
+    underline();
+    color(33);
     printf("Unique Ethernet Senders:\n");
+    unattr();
     printMap(srcMacs);
+    underline();
+    color(34);
+    printf("Unique Ethernet Receivers:\n");
+    unattr();
+    printMap(destMacs);
+    underline();
+    color(35);
+    printf("Unique IP Senders:\n");
+    unattr();
+    printMap(srcIPs);
+    underline();
+    color(36);
+    printf("Unique IP Receivers:\n");
+    unattr();
+    printMap(destIPs);
+    color(5);	//Not actually a color, just blink.
 	printf("You captured %d packets.\n", numpackets);
+	unattr();
 	return 0;
 }
 
@@ -67,7 +102,9 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	if(numpackets < 1) {
 		time_t timesec = pkt_time.tv_sec;
 		struct tm* secinfo = localtime(&timesec);
+		bold();
 		printf("Packet capture started at %s", asctime(secinfo));
+		unattr();
 	}
 	struct ether_header* ethernet = (struct ether_header *)pkt;
 	string shost, dhost;
@@ -75,46 +112,74 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	printMac(ethernet->ether_dhost, &dhost);
 	if(!findInMap(srcMacs, shost)) srcMacs.insert(std::make_pair(shost,1));
 	else srcMacs[shost]++;
+	if(!findInMap(destMacs, dhost)) destMacs.insert(std::make_pair(dhost,1));
+	else destMacs[dhost]++;
 	if(ntohs(ethernet->ether_type)==ETHERTYPE_IP){
-	    printf("This is an IP packet.\n");
+		#ifdef DEBUG
+			printf("This is an IP packet.\n");
+		#endif
 	    struct iphdr* ip = (struct iphdr*)(pkt+sizeof(struct ether_header));
 	    char srcstr[INET_ADDRSTRLEN], dststr[INET_ADDRSTRLEN];
+	    string srcip, dstip;
 	    inet_ntop(AF_INET, &(ip->saddr), srcstr, INET_ADDRSTRLEN);
 	    inet_ntop(AF_INET, &(ip->daddr), dststr, INET_ADDRSTRLEN);
-	    printf("src: %s dst: %s protocol: %d\n", srcstr, dststr, ip->protocol);
+	    stringstream sstream, dstream;
+	    sstream << srcstr;
+	    sstream >> srcip;
+	    if(!findInMap(srcIPs, srcip)) srcIPs.insert(std::make_pair(srcip,1));
+		else srcIPs[srcip]++;
+	    dstream << dststr;
+	    dstream >> dstip;
+		if(!findInMap(destIPs, dstip)) destIPs.insert(std::make_pair(dstip,1));
+		else destIPs[dstip]++;
+	    #ifdef DEBUG
+			printf("src: %s dst: %s protocol: %d\n", srcstr, dststr, ip->protocol);
+	    #endif
 	    if(ip->protocol==IPPROTO_UDP){
-	        printf("This is a UDP packet.\n");
+			#ifdef DEBUG
+				printf("This is a UDP packet.\n");
+	        #endif
 	        struct udphdr* udp = (struct udphdr*)(pkt+sizeof(struct ether_header)+sizeof(iphdr));
 	        short sport = ntohs(udp->source);
 	        short dport = ntohs(udp->dest);
 	        if(!findInList(srcPorts, sport)) {
 				srcPorts.push_back(sport);
 			}
-			else printf("Duplicate port detected. Not adding to the list.\n");
+			#ifdef DEBUG
+				else printf("Duplicate port detected. Not adding to the list.\n");
+			#endif
 			if(!findInList(destPorts, dport)) {
 				destPorts.push_back(dport);
 			}
-			else printf("Duplicate port detected. Not adding to the list.\n");
-            printf("src port: %d dst port: %d\n", sport, dport);
+			#ifdef DEBUG
+				else printf("Duplicate port detected. Not adding to the list.\n");
+				printf("src port: %d dst port: %d\n", sport, dport);
+			#endif
 	    }
 	}
-	//else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
-	//    printf("This is an ARP packet.\n");
-	    //printf("Source MAC: %s\n",printMac(ethernet->ether_shost));
-	    //printf("Destination MAC: %s\n",printMac(ethernet->ether_dhost));
-	//}
-	printf("Received packet at time %ld    %ld.\n", pkt_time.tv_sec, pkt_time.tv_usec);
+	else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
+		#ifdef DEBUG
+			printf("This is an ARP packet.\n");
+			string shost, dhost;
+			printMac(ethernet->ether_shost, &shost);
+			printMac(ethernet->ether_dhost, &dhost);
+			cout << "Source MAC: " << shost << endl;
+			cout << "Destination MAC: " << dhost << endl;
+		#endif
+	}
+	#ifdef DEBUG
+		printf("Received packet at time %ld    %ld.\n", pkt_time.tv_sec, pkt_time.tv_usec);
+	#endif
 	numpackets++;
 }
 
 void printMac(const u_char* data, string *str) {
-	char chars[20] = "";
-	for(int i = 0; i < 5; i++) {
-		sprintf(chars, "%s%.2x", chars, data[i]);
+	char chars[3] = "";
+    for(int i = 0; i < 5; i++) {
+		sprintf(chars, "%.2x", data[i]);
 		if(i < 4) sprintf(chars, "%s:", chars);
+		(*str).append(chars);
 	}
-    for(int i = 0; chars[i] != 0; i++)
-        (*str) += chars[i];
 }
 
 bool findInList(list<short> checkList, short checkPort) {
@@ -126,11 +191,6 @@ bool findInList(list<short> checkList, short checkPort) {
 }
 
 bool findInMap(map<string, int> checkMap, string checkString) {
-	/*map<string, int>::iterator i;
-	for(i = checkMap.begin(); i != checkMap.end(); i++) {
-		if(!((*i).first).compare(checkString)) return true;
-	}
-	return false;*/
 	return checkMap.find(checkString)!=checkMap.end();
 }
 
@@ -139,11 +199,33 @@ void printShortList(list<short> toPrint) {
 	for(i = toPrint.begin(); i != toPrint.end(); i++) {
 		cout << *i << endl;
 	}
+	cout << endl;
 }
 
 void printMap(map<string, int> toPrint) {
 	map<string, int>::iterator i;
 	for(i = toPrint.begin(); i != toPrint.end(); i++) {
-		cout << (*i).first << ": " << (*i).second << endl;
+		cout << "|  " << (*i).first << "  | " << (*i).second << " |" << endl;
 	}
+	cout << endl;
+}
+
+void bold() {
+	char ESC = 27;
+	printf("%c[1m", ESC);
+}
+
+void underline() {
+	char ESC = 27;
+	printf("%c[4m", ESC);
+}
+
+void color(int col) {
+	char ESC = 27;
+	printf("%c[%dm", ESC, col);
+}
+
+void unattr() {
+	char ESC = 27;
+	printf("%c[0m", ESC);
 }
