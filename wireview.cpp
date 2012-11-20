@@ -18,8 +18,6 @@
 using namespace std;
 //constants
 #define MAX_SIZE 102400 //100KB should be enough.
-#define ADDR_LEN 128
-#define ETHERNET_HEADER 14
 //functions
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
@@ -28,7 +26,6 @@ bool findInList(list<short> checkList, short checkPort);
 void printShortList(list<short> toPrint);
 //global variables
 int numpackets = 0;
- 
 list<short> srcPorts;
 list<short> destPorts;
 
