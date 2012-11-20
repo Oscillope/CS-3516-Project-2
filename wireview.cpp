@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <limits.h>
 #include <pcap.h>
 #include <arpa/inet.h>
 //internet packet utilities
@@ -29,12 +30,18 @@ bool findInList(list<short> checkList, short checkPort);
 bool findInMap(map<string, int> checkMap, string checkString);
 void printShortList(list<short> toPrint);
 void printMap(map<string, int> toPrint);
+void subtract_timeval(struct timeval* result, struct timeval* tv_1, struct timeval* tv_2);
 void bold();
 void underline();
 void color(int col);
 void unattr();
 //global variables
 int numpackets = 0;
+unsigned int minlength = INT_MAX;
+unsigned int maxlength = 0;
+unsigned int avglength = 0;
+struct timeval firstTime;
+struct timeval lastTime;
 map<string, int> srcMacs;
 map<string, int> destMacs;
 map<string, int> srcIPs;
@@ -46,6 +53,7 @@ list<short> srcPorts;
 list<short> destPorts;
 
 int main(int argc, char** argv) {
+	cout << endl;
 	if(argc < 2) {
 		fprintf(stderr, "You must provide a packet capture file.\n");
 		exit(1);
@@ -64,43 +72,62 @@ int main(int argc, char** argv) {
 			printf("This isn't ethernet!\n");
 	}
     pcap_close(cap);
-    underline();
-    color(31);
-    printf("Unique Ethernet Senders:\n");
-    unattr();
-    printMap(srcMacs);
-    underline();
-    color(32);
-    printf("Unique Ethernet Receivers:\n");
-    unattr();
-    printMap(destMacs);
-    underline();
-    color(33);
-    printf("Unique IP Senders:\n");
-    unattr();
-    printMap(srcIPs);
-    underline();
-    color(34);
-    printf("Unique IP Receivers:\n");
-    unattr();
-    printMap(destIPs);
-    underline();
-    color(35);
-    printf("Unique UDP Source Ports:\n");
-    unattr();
-    printShortList(srcPorts);
-    underline();
-    color(36);
-    printf("Unique UDP Destination Ports:\n");
-    unattr();
-    printShortList(destPorts);
-	printf("You captured %d packets.\n", numpackets);
+    if(!srcMacs.empty()) {
+		underline();
+		color(31);
+		printf("Unique Ethernet Senders:\n");
+		unattr();
+		printMap(srcMacs);
+	}
+    if(!destMacs.empty()) {
+		underline();
+		color(32);
+		printf("Unique Ethernet Receivers:\n");
+		unattr();
+		printMap(destMacs);
+	}
+    if(!srcIPs.empty()) {
+		underline();
+		color(33);
+		printf("Unique IP Senders:\n");
+		unattr();
+		printMap(srcIPs);
+	}
+    if(!destIPs.empty()) {
+		underline();
+		color(34);
+		printf("Unique IP Receivers:\n");
+		unattr();
+		printMap(destIPs);
+	}
+    if(!srcPorts.empty()) {
+		underline();
+		color(35);
+		printf("Unique UDP Source Ports:\n");
+		unattr();
+		printShortList(srcPorts);
+	}
+	if(!destPorts.empty()) {
+		underline();
+		color(36);
+		printf("Unique UDP Destination Ports:\n");
+		unattr();
+		printShortList(destPorts);
+	}
+	struct timeval duration;
+	subtract_timeval(&duration, &lastTime, &firstTime);
+	double dur = (duration.tv_usec / 1000000.0) + duration.tv_sec;
+	printf("You captured %d packets in %f seconds.\n", numpackets, dur);
+	avglength = avglength / numpackets;
+	printf("Minimum packet length: %d bytes\nMaximum packet length: %d bytes\nAverage packet length: %d bytes\n", minlength, maxlength, avglength);
+	cout << endl;
 	return 0;
 }
 
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt) {
 	struct timeval pkt_time = header->ts;
 	if(numpackets < 1) {
+		firstTime = pkt_time;
 		time_t timesec = pkt_time.tv_sec;
 		struct tm* secinfo = localtime(&timesec);
 		bold();
@@ -108,6 +135,12 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 		unattr();
 	}
 	struct ether_header* ethernet = (struct ether_header *)pkt;
+	#ifdef DEBUG
+		printf("Got packet of length %u.\n", header->len);
+	#endif
+	if(header->len < minlength) minlength = header->len;
+	if(header->len > maxlength) maxlength = header->len;
+	avglength += header->len;
 	string shost, dhost;
 	printMac(ethernet->ether_shost, &shost);
 	printMac(ethernet->ether_dhost, &dhost);
@@ -191,6 +224,7 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 		printf("Received packet at time %ld    %ld.\n", pkt_time.tv_sec, pkt_time.tv_usec);
 	#endif
 	numpackets++;
+	lastTime = pkt_time;
 }
 
 void printMac(const u_char* data, string *str) {
@@ -225,9 +259,24 @@ void printShortList(list<short> toPrint) {
 void printMap(map<string, int> toPrint) {
 	map<string, int>::iterator i;
 	for(i = toPrint.begin(); i != toPrint.end(); i++) {
-		cout << "|  " << (*i).first << "  | " << (*i).second << " |" << endl;
+		cout << "  " << (*i).first << "   [ " << (*i).second << " packets ]" << endl;
 	}
 	cout << endl;
+}
+
+void subtract_timeval(struct timeval* result, struct timeval* tv_1, struct timeval* tv_2) {
+	if (tv_1->tv_usec < tv_2->tv_usec) {
+         int nsec = (tv_2->tv_usec - tv_1->tv_usec) / 1000000 + 1;
+         tv_2->tv_usec -= 1000000 * nsec;
+         tv_2->tv_sec += nsec;
+    }
+    if (tv_1->tv_usec - tv_2->tv_usec > 1000000) {
+		int nsec = (tv_1->tv_usec - tv_2->tv_usec) / 1000000;
+		tv_2->tv_usec += 1000000 * nsec;
+		tv_2->tv_sec -= nsec;
+    }
+    result->tv_sec = tv_1->tv_sec - tv_2->tv_sec;
+    result->tv_usec = tv_1->tv_usec - tv_2->tv_usec;
 }
 
 void bold() {
@@ -235,7 +284,7 @@ void bold() {
 	printf("%c[1m", ESC);
 }
 
-void underline() {
+void underline() {void subtract_timeval(struct timeval* result, struct timeval* tv_1, struct timeval* tv_2);
 	char ESC = 27;
 	printf("%c[4m", ESC);
 }
