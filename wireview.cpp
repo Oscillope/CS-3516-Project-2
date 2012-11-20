@@ -19,6 +19,7 @@
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
 char* printMac(const u_char* data);
+int findPortInList(struct mydnsnode* curnode, short testport);
 //global variables
 int numpackets = 0;
 int lendnslist = 0;
@@ -30,10 +31,15 @@ typedef struct myipnode{
 } ipnode;
 typedef struct mydnsnode{
     short port;
-    struct mynode *next;
+    struct mydnsnode *next;
 } node;
-node unique_ports_head;
+mydnsnode *unique_ports_head;
+mydnsnode *unique_ports_cur;
 int main(int argc, char** argv) {
+	unique_ports_head = new mydnsnode;
+	malloc(1000*sizeof(mydnsnode));
+	unique_ports_head->next = 0;
+	unique_ports_cur = unique_ports_head;
 	if(argc < 2) {
 		fprintf(stderr, "You must provide a packet capture file.\n");
 		#ifdef VULGAR
@@ -59,6 +65,11 @@ int main(int argc, char** argv) {
 		#endif
 	}
     pcap_close(cap);
+    unique_ports_cur = unique_ports_head;
+    while(unique_ports_cur->next != 0) {
+		printf("Unique port: %d\n",unique_ports_cur->port);
+		unique_ports_cur += sizeof(mydnsnode);
+	}
 	#ifdef VULGAR
 		printf("You captured %d shitty-ass packets.\n", numpackets);
 	#else
@@ -90,6 +101,16 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	        struct udphdr* udp = (struct udphdr*)(pkt+sizeof(struct ether_header)+sizeof(iphdr));
 	        short sport = ntohs(udp->source);
 	        short dport = ntohs(udp->dest);
+	        //while(unique_ports_cur->next != 0) unique_ports_cur = unique_ports_cur->next;
+	        unique_ports_cur->next = new mydnsnode;
+	        if(!findPortInList(unique_ports_cur, sport)) {
+				printf("Unique port found... Adding!\n");
+				#ifdef VULGAR
+					printf("You bitch.\n");
+				#endif
+				unique_ports_cur->port = sport;
+				unique_ports_cur += sizeof(mydnsnode);
+			}
             printf("src port: %d dst port: %d\n", sport, dport);
 	    }
 	}
@@ -109,4 +130,19 @@ char* printMac(const u_char* data) {
 		if(i < 4) sprintf(string, "%s:", string);
 	}
 	return string;
+}
+
+int findPortInList(struct mydnsnode* curnode, short testport) {
+	int occurrences = 0;
+	while(curnode->next != 0) {
+		printf("Testing port %d\n",curnode->port);
+		if(curnode->port == testport) occurrences++;
+		else {
+			printf("That's unique, you retard!\n");
+			curnode += sizeof(mydnsnode);
+		}
+		printf("Current occurrences of port: %d\n", occurrences);
+	}
+	curnode = unique_ports_head;
+	return occurrences;
 }
