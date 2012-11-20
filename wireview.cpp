@@ -22,7 +22,7 @@ using namespace std;
 //functions
 char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
-char* printMac(const u_char* data);
+void printMac(const u_char* data, string *str);
 bool findInList(list<short> checkList, short checkPort);
 bool findInMap(map<string, int> checkMap, string checkString);
 void printShortList(list<short> toPrint);
@@ -30,9 +30,9 @@ void printMap(map<string, int> toPrint);
 //global variables
 int numpackets = 0;
 map<string, int> srcMacs;
-map<char*, int> destMacs;
-map<char*, int> srcIPs;
-map<char*, int> destIPs;
+map<string, int> destMacs;
+map<string, int> srcIPs;
+map<string, int> destIPs;
 list<short> srcPorts;
 list<short> destPorts;
 
@@ -70,8 +70,9 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 		printf("Packet capture started at %s", asctime(secinfo));
 	}
 	struct ether_header* ethernet = (struct ether_header *)pkt;
-	string shost = printMac(ethernet->ether_shost);
-	string dhost = printMac(ethernet->ether_dhost);
+	string shost, dhost;
+	printMac(ethernet->ether_shost, &shost);
+	printMac(ethernet->ether_dhost, &dhost);
 	if(!findInMap(srcMacs, shost)) srcMacs.insert(std::make_pair(shost,1));
 	else srcMacs[shost]++;
 	if(ntohs(ethernet->ether_type)==ETHERTYPE_IP){
@@ -99,20 +100,21 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	}
 	//else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
 	//    printf("This is an ARP packet.\n");
-	    printf("Source MAC: %s\n",printMac(ethernet->ether_shost));
-	    printf("Destination MAC: %s\n",printMac(ethernet->ether_dhost));
+	    //printf("Source MAC: %s\n",printMac(ethernet->ether_shost));
+	    //printf("Destination MAC: %s\n",printMac(ethernet->ether_dhost));
 	//}
 	printf("Received packet at time %ld    %ld.\n", pkt_time.tv_sec, pkt_time.tv_usec);
 	numpackets++;
 }
 
-char* printMac(const u_char* data) {
-	char string[20] = "";
+void printMac(const u_char* data, string *str) {
+	char chars[20] = "";
 	for(int i = 0; i < 5; i++) {
-		sprintf(string, "%s%.2x", string, data[i]);
-		if(i < 4) sprintf(string, "%s:", string);
+		sprintf(chars, "%s%.2x", chars, data[i]);
+		if(i < 4) sprintf(chars, "%s:", chars);
 	}
-	return string;
+    for(int i = 0; chars[i] != 0; i++)
+        (*str) += chars[i];
 }
 
 bool findInList(list<short> checkList, short checkPort) {
@@ -124,11 +126,12 @@ bool findInList(list<short> checkList, short checkPort) {
 }
 
 bool findInMap(map<string, int> checkMap, string checkString) {
-	map<string, int>::iterator i;
+	/*map<string, int>::iterator i;
 	for(i = checkMap.begin(); i != checkMap.end(); i++) {
 		if(!((*i).first).compare(checkString)) return true;
 	}
-	return false;
+	return false;*/
+	return checkMap.find(checkString)!=checkMap.end();
 }
 
 void printShortList(list<short> toPrint) {
