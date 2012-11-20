@@ -209,9 +209,9 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 			if(dstARP.find(dhostmac)!=dstARP.end()){
 			    (dstARP[dhostmac]).push_back(dhostip);
 			} else {
-			    list<string> dstips;
-			    dstips.push_back(dhostip);
-			    dstARP.insert(std::make_pair(shostmac,dstips));
+			    list<string> ARPdips;
+			    ARPdips.push_back(dhostip);
+			    dstARP.insert(std::make_pair(shostmac,ARPdips));
 			}
 			    
 		#ifdef DEBUG
