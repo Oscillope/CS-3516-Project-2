@@ -202,9 +202,9 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 			if(srcARP.find(shostmac)!=srcARP.end()){
 			    (srcARP[shostmac]).push_back(shostip);
 			} else {
-			    list<string> srcips;
-			    srcips.push_back(shostip);
-			    srcARP.insert(std::make_pair(shostmac,srcips));
+			    list<string> ARPsips;
+			    ARPsips.push_back(shostip);
+			    srcARP.insert(std::make_pair(shostmac,ARPsips));
 			}
 			if(dstARP.find(dhostmac)!=dstARP.end()){
 			    (dstARP[dhostmac]).push_back(dhostip);
