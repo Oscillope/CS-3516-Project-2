@@ -107,5 +107,3 @@ char* printMac(const u_char* data) {
 	}
 	return string;
 }
-		
-		
