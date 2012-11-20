@@ -39,6 +39,9 @@ map<string, int> srcMacs;
 map<string, int> destMacs;
 map<string, int> srcIPs;
 map<string, int> destIPs;
+map<string, list<string> > srcARP;
+map<string, list<string> > dstARP;
+
 list<short> srcPorts;
 list<short> destPorts;
 
@@ -156,11 +159,30 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	    }
 	}
 	else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
+			string shostmac, dhostmac, shostip, dhostip;
+			printMac(ethernet->ether_shost, &shostmac);
+			printMac(ethernet->ether_dhost, &dhostmac);
+			//TODO get ips
+			shostip = "dummy";
+			dhostip = "dummy";
+			//get or make ip lists
+			if(srcARP.find(shostmac)!=srcARP.end()){
+			    (srcARP[shostmac]).push_back(shostip);
+			} else {
+			    list<string> srcips;
+			    srcips.push_back(shostip);
+			    srcARP.insert(std::make_pair(shostmac,srcips));
+			}
+			if(dstARP.find(dhostmac)!=dstARP.end()){
+			    (dstARP[dhostmac]).push_back(dhostip);
+			} else {
+			    list<string> dstips;
+			    dstips.push_back(dhostip);
+			    dstARP.insert(std::make_pair(shostmac,dstips));
+			}
+			    
 		#ifdef DEBUG
-			printf("This is an ARP packet.\n");
-			string shost, dhost;
-			printMac(ethernet->ether_shost, &shost);
-			printMac(ethernet->ether_dhost, &dhost);
+			printf("This is an ARP packet.\n");			
 			cout << "Source MAC: " << shost << endl;
 			cout << "Destination MAC: " << dhost << endl;
 		#endif
