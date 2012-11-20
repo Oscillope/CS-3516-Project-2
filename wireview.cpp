@@ -6,6 +6,7 @@
 #include <pcap.h>
 #include <arpa/inet.h>
 #include <list>
+#include <map>
 #include <iostream>
 //internet packet utilities
 #include <netinet/if_ether.h>
@@ -25,10 +26,15 @@ char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
 char* printMac(const u_char* data);
 bool findInList(list<short> checkList, short checkPort);
+bool findInMap(map<string, int> checkMap, string checkString);
 void printShortList(list<short> toPrint);
+void printMap(map<string, int> toPrint);
 //global variables
 int numpackets = 0;
- 
+map<string, int> srcMacs;
+map<char*, int> destMacs;
+map<char*, int> srcIPs;
+map<char*, int> destIPs;
 list<short> srcPorts;
 list<short> destPorts;
 
@@ -52,6 +58,8 @@ int main(int argc, char** argv) {
     printShortList(srcPorts);
     printf("Unique Destination Ports:\n");
     printShortList(destPorts);
+    printf("Unique Ethernet Senders:\n");
+    printMap(srcMacs);
 	printf("You captured %d packets.\n", numpackets);
 	return 0;
 }
@@ -64,6 +72,10 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 		printf("Packet capture started at %s", asctime(secinfo));
 	}
 	struct ether_header* ethernet = (struct ether_header *)pkt;
+	string shost = printMac(ethernet->ether_shost);
+	string dhost = printMac(ethernet->ether_dhost);
+	if(!findInMap(srcMacs, shost)) srcMacs.insert(std::make_pair(shost,1));
+	else srcMacs[shost]++;
 	if(ntohs(ethernet->ether_type)==ETHERTYPE_IP){
 	    printf("This is an IP packet.\n");
 	    struct iphdr* ip = (struct iphdr*)(pkt+sizeof(struct ether_header));
@@ -87,11 +99,11 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
             printf("src port: %d dst port: %d\n", sport, dport);
 	    }
 	}
-	else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
-	    printf("This is an ARP packet.\n");
+	//else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
+	//    printf("This is an ARP packet.\n");
 	    printf("Source MAC: %s\n",printMac(ethernet->ether_shost));
 	    printf("Destination MAC: %s\n",printMac(ethernet->ether_dhost));
-	}
+	//}
 	printf("Received packet at time %ld    %ld.\n", pkt_time.tv_sec, pkt_time.tv_usec);
 	numpackets++;
 }
@@ -113,9 +125,24 @@ bool findInList(list<short> checkList, short checkPort) {
 	return false;
 }
 
+bool findInMap(map<string, int> checkMap, string checkString) {
+	map<string, int>::iterator i;
+	for(i = checkMap.begin(); i != checkMap.end(); i++) {
+		if(!((*i).first).compare(checkString)) return true;
+	}
+	return false;
+}
+
 void printShortList(list<short> toPrint) {
 	list<short>::iterator i;
 	for(i = toPrint.begin(); i != toPrint.end(); i++) {
 		cout << *i << endl;
+	}
+}
+
+void printMap(map<string, int> toPrint) {
+	map<string, int>::iterator i;
+	for(i = toPrint.begin(); i != toPrint.end(); i++) {
+		cout << (*i).first << ": " << (*i).second << endl;
 	}
 }
