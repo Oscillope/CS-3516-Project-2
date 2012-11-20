@@ -126,11 +126,6 @@ bool findInList(list<short> checkList, short checkPort) {
 }
 
 bool findInMap(map<string, int> checkMap, string checkString) {
-	/*map<string, int>::iterator i;
-	for(i = checkMap.begin(); i != checkMap.end(); i++) {
-		if(!((*i).first).compare(checkString)) return true;
-	}
-	return false;*/
 	return checkMap.find(checkString)!=checkMap.end();
 }
 
