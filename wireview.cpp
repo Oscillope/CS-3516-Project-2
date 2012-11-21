@@ -20,6 +20,7 @@
 #include <iostream>
 #include <sstream>
 using namespace std;
+
 //constants
 #define MAX_SIZE 102400 //100KB should be enough.
 //functions
@@ -51,6 +52,14 @@ map<string, list<string> > dstARP;
 
 list<short> srcPorts;
 list<short> destPorts;
+
+struct etherarphdr
+{
+    unsigned char sha[ETH_ALEN];   /* Sender hardware address.  */
+    unsigned char sip[4];          /* Sender IP address.  */
+    unsigned char tha[ETH_ALEN];   /* Target hardware address.  */
+    unsigned char tip[4];          /* Target IP address.  */
+};
 
 int main(int argc, char** argv) {
 	cout << endl;
@@ -195,9 +204,17 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 			string shostmac, dhostmac, shostip, dhostip;
 			printMac(ethernet->ether_shost, &shostmac);
 			printMac(ethernet->ether_dhost, &dhostmac);
-			//TODO get ips
-			shostip = "dummy";
-			dhostip = "dummy";
+			//The interesting stuff is after the static part of the arp header
+			struct etherarphdr* arp = (struct etherarphdr*)(pkt+sizeof(struct ether_header)+sizeof(struct arphdr));
+			//get the actual ip addresses
+			char srcstr[INET_ADDRSTRLEN], dststr[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &(arp->sip), srcstr, INET_ADDRSTRLEN);
+			inet_ntop(AF_INET, &(arp->tip), dststr, INET_ADDRSTRLEN);
+			stringstream sstream, dstream;
+			sstream << srcstr;
+	        sstream >> shostip;
+	        dstream << dststr;
+	        dstream >> dhostip;
 			//get or make ip lists
 			if(srcARP.find(shostmac)!=srcARP.end()){
 			    (srcARP[shostmac]).push_back(shostip);
