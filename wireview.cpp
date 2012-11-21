@@ -31,6 +31,7 @@ bool findInList(list<short> checkList, short checkPort);
 bool findInMap(map<string, int> checkMap, string checkString);
 void printShortList(list<short> toPrint);
 void printMap(map<string, int> toPrint);
+void printIPList(map<string, list<string> > toPrint);
 void subtract_timeval(struct timeval* result, struct timeval* tv_1, struct timeval* tv_2);
 void bold();
 void underline();
@@ -84,30 +85,44 @@ int main(int argc, char** argv) {
     if(!srcMacs.empty()) {
 		underline();
 		color(31);
-		printf("Unique Ethernet Senders:\n");
+		printf("Unique Ethernet Sources:\n");
 		unattr();
 		printMap(srcMacs);
 	}
     if(!destMacs.empty()) {
 		underline();
 		color(32);
-		printf("Unique Ethernet Receivers:\n");
+		printf("Unique Ethernet Destinations:\n");
 		unattr();
 		printMap(destMacs);
 	}
     if(!srcIPs.empty()) {
 		underline();
 		color(33);
-		printf("Unique IP Senders:\n");
+		printf("Unique IP Sources:\n");
 		unattr();
 		printMap(srcIPs);
 	}
     if(!destIPs.empty()) {
 		underline();
 		color(34);
-		printf("Unique IP Receivers:\n");
+		printf("Unique IP Destinations:\n");
 		unattr();
 		printMap(destIPs);
+	}
+	if(!srcARP.empty()) {
+		underline();
+		color(33);
+		printf("ARP Sources:\n");
+		unattr();
+		printIPList(srcARP);
+	}
+	if(!dstARP.empty()) {
+		underline();
+		color(34);
+		printf("ARP Destinations:\n");
+		unattr();
+		printIPList(dstARP);
 	}
     if(!srcPorts.empty()) {
 		underline();
@@ -279,6 +294,19 @@ void printMap(map<string, int> toPrint) {
 		cout << "  " << (*i).first << "   [ " << (*i).second << " packets ]" << endl;
 	}
 	cout << endl;
+}
+
+void printIPList(map<string, list<string> > toPrint) {
+	map<string, list<string> >::iterator imap;
+	list<string>::iterator ilist;
+	list<string> tempList;
+	for(imap = toPrint.begin(); imap != toPrint.end(); imap++) {
+		cout << "  " << (*imap).first << endl;
+		tempList = (*imap).second;
+		for(ilist = tempList.begin(); ilist != tempList.end(); ilist++) {
+			cout << "    " << *ilist << endl;
+		}
+	}
 }
 
 void subtract_timeval(struct timeval* result, struct timeval* tv_1, struct timeval* tv_2) {
