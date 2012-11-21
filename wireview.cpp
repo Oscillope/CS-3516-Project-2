@@ -28,6 +28,7 @@ char* openFile(char* path, char data[MAX_SIZE]);
 void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt);
 void printMac(const u_char* data, string *str);
 bool findInList(list<short> checkList, short checkPort);
+bool findStringList(list<string> checkList, string checkString);
 bool findInMap(map<string, int> checkMap, string checkString);
 void printShortList(list<short> toPrint);
 void printMap(map<string, int> toPrint);
@@ -112,15 +113,15 @@ int main(int argc, char** argv) {
 	}
 	if(!srcARP.empty()) {
 		underline();
-		color(33);
-		printf("ARP Sources:\n");
+		color(35);
+		printf("Unique ARP Sources:\n");
 		unattr();
 		printIPList(srcARP);
 	}
 	if(!dstARP.empty()) {
 		underline();
-		color(34);
-		printf("ARP Destinations:\n");
+		color(36);
+		printf("Unique ARP Destinations:\n");
 		unattr();
 		printIPList(dstARP);
 	}
@@ -243,7 +244,7 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 			} else {
 			    list<string> ARPdips;
 			    ARPdips.push_back(dhostip);
-			    dstARP.insert(std::make_pair(shostmac,ARPdips));
+			    dstARP.insert(std::make_pair(dhostmac,ARPdips));
 			}
 			    
 		#ifdef DEBUG
@@ -261,9 +262,9 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 
 void printMac(const u_char* data, string *str) {
 	char chars[3] = "";
-    for(int i = 0; i < 5; i++) {
+    for(int i = 0; i < 6; i++) {
 		sprintf(chars, "%.2x", data[i]);
-		if(i < 4) sprintf(chars, "%s:", chars);
+		if(i < 5) sprintf(chars, "%s:", chars);
 		(*str).append(chars);
 	}
 }
@@ -281,6 +282,7 @@ bool findInMap(map<string, int> checkMap, string checkString) {
 }
 
 void printShortList(list<short> toPrint) {
+	toPrint.sort();
 	list<short>::iterator i;
 	for(i = toPrint.begin(); i != toPrint.end(); i++) {
 		cout << *i << endl;
@@ -303,10 +305,13 @@ void printIPList(map<string, list<string> > toPrint) {
 	for(imap = toPrint.begin(); imap != toPrint.end(); imap++) {
 		cout << "  " << (*imap).first << endl;
 		tempList = (*imap).second;
+		tempList.sort();
+		tempList.unique();
 		for(ilist = tempList.begin(); ilist != tempList.end(); ilist++) {
 			cout << "    " << *ilist << endl;
 		}
 	}
+	cout << endl;
 }
 
 void subtract_timeval(struct timeval* result, struct timeval* tv_1, struct timeval* tv_2) {
@@ -329,7 +334,7 @@ void bold() {
 	printf("%c[1m", ESC);
 }
 
-void underline() {void subtract_timeval(struct timeval* result, struct timeval* tv_1, struct timeval* tv_2);
+void underline() {
 	char ESC = 27;
 	printf("%c[4m", ESC);
 }
