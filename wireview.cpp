@@ -202,10 +202,10 @@ void printCap(u_char *args, const struct pcap_pkthdr *header, const u_char *pkt)
 	}
 	else if(ntohs(ethernet->ether_type)==ETHERTYPE_ARP) {
 			string shostmac, dhostmac, shostip, dhostip;
-			printMac(ethernet->ether_shost, &shostmac);
-			printMac(ethernet->ether_dhost, &dhostmac);
 			//The interesting stuff is after the static part of the arp header
 			struct etherarphdr* arp = (struct etherarphdr*)(pkt+sizeof(struct ether_header)+sizeof(struct arphdr));
+			printMac(arp->sha, &shostmac);
+			printMac(arp->tha, &dhostmac);
 			//get the actual ip addresses
 			char srcstr[INET_ADDRSTRLEN], dststr[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(arp->sip), srcstr, INET_ADDRSTRLEN);
